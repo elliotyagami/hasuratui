@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -48,7 +49,7 @@ var (
 	linkMap      = map[string]string{"Hasura Install": "install", "Hasura login": "login", "discord": "https://discordapp.com/channels/407792526867693568/411785187631038474", "hasura site": "https://hasura.io/", "hasura dashboard": "https://dashboard.hasura.io/clusters"}
 	canOpen      = false
 	directory    = ""
-	cmdList      = []string{"hasura ms list", "hasura api-console", "hasura cluster status", "hasura cluster create --infra free", "hasura cluster list", "hasura cluster set-default"}
+	cmdList      = []string{"hasura ms list", "hasura api-console", "hasura cluster status", "yes | hasura cluster create --infra free", "hasura cluster list", "hasura cluster set-default"}
 )
 
 func getDir() string {
@@ -83,7 +84,7 @@ func nextView(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 func preView(g *gocui.Gui, v *gocui.View) error {
-	nextIndex = (nextIndex - 1) % len(viewArr)
+	nextIndex = (len(viewArr) + nextIndex - 1) % len(viewArr)
 	name := viewArr[nextIndex]
 
 	// out, err := g.View("terminal")
@@ -165,7 +166,7 @@ func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 
 	column1 := int(float64(maxX-2) * .15)
-	column2 := int(float64(maxX-2) * .45)
+	column2 := int(float64(maxX-2) * .43)
 	screenMiddle := int(float64(maxY-2) * .45)
 	cmdBar := int(float64(maxY-2) * .08)
 	screenQuarter := int(float64(maxY-2) * .75)
@@ -175,7 +176,7 @@ func layout(g *gocui.Gui) error {
 		}
 		v.Title = "Project list"
 		v.Wrap = true
-		v.Autoscroll = true
+		// v.Autoscroll = true
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorBlue
 		v.SelFgColor = gocui.ColorWhite
@@ -195,7 +196,7 @@ func layout(g *gocui.Gui) error {
 		}
 		v.Title = "Links"
 		v.Wrap = true
-		v.Autoscroll = true
+		// v.Autoscroll = true
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorBlue
 		v.SelFgColor = gocui.ColorWhite
@@ -209,7 +210,7 @@ func layout(g *gocui.Gui) error {
 		}
 		v.Title = "Documentation"
 		v.Wrap = true
-		v.Autoscroll = true
+		// v.Autoscroll = true
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorYellow
 		v.SelFgColor = gocui.ColorBlack
@@ -240,18 +241,22 @@ func layout(g *gocui.Gui) error {
 			return err
 		}
 		v.Title = "Output"
-		v.Editable = true
 		v.Wrap = true
+		v.Editable = true
 		v.Highlight = true
-		v.SelBgColor = gocui.ColorYellow
-		v.SelFgColor = gocui.ColorBlack
 		v.Autoscroll = true
+		v.SelBgColor = gocui.ColorBlue
+		v.SelFgColor = gocui.ColorWhite
 	}
 	if v, err := g.SetView("cmd_panel", 1+column1+column2, 1+screenQuarter, maxX-1, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
+		v.Wrap = true
 		v.Autoscroll = true
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorBlue
+		v.SelFgColor = gocui.ColorWhite
 		v.Title = "Cmd panel"
 		for i := range cmdList {
 			fmt.Fprintf(v, "%s\n", cmdList[i])
@@ -378,10 +383,21 @@ func terminalHandler(g *gocui.Gui, v *gocui.View) error {
 		l = ""
 	}
 	_ = status(g, "Executing commands")
-	out, err := exec.Command("sh", "-c", getDir()+l).Output()
-	if err != nil {
+	if l == "reset" {
+		v.Clear()
+		return nil
 	}
-	_ = statusOutput(g, l, fmt.Sprintf("%s", out))
+	cmd := exec.Command("sh", "-c", getDir()+l)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	if err != nil {
+		_ = statusOutput(g, l, fmt.Sprintf("%s: %s", err, stderr.String()))
+		return nil
+	}
+	_ = statusOutput(g, l, fmt.Sprintf("%s", out.String()))
 
 	return nil
 }
@@ -395,8 +411,16 @@ func execPreCmd(g *gocui.Gui, v *gocui.View) error {
 		l = ""
 	}
 	_ = status(g, "Executing popular hasura commands")
-	out, err := exec.Command("sh", "-c", getDir()+l).Output()
+	cmd := exec.Command("sh", "-c", getDir()+l)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+
 	if err != nil {
+		_ = statusOutput(g, l, fmt.Sprintf("%s: %s", err, stderr.String()))
+		return nil
 	}
 	_ = statusOutput(g, l, fmt.Sprintf("%s", out))
 
@@ -461,6 +485,9 @@ func keybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", gocui.KeyTab, gocui.ModNone, nextView); err != nil {
 		log.Panicln(err)
 	}
+	if err := g.SetKeybinding("", gocui.KeyCtrlSlash, gocui.ModNone, preView); err != nil {
+		log.Panicln(err)
+	}
 	if err := g.SetKeybinding("msg", gocui.KeyEnter, gocui.ModNone, delMsg); err != nil {
 		return err
 	}
@@ -495,6 +522,12 @@ func keybindings(g *gocui.Gui) error {
 		return err
 	}
 	if err := g.SetKeybinding("link", gocui.KeyEnter, gocui.ModNone, openlink); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("output", gocui.KeyArrowDown, gocui.ModNone, cursorDown); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("output", gocui.KeyArrowUp, gocui.ModNone, cursorUp); err != nil {
 		return err
 	}
 	if err := g.SetKeybinding("cmd_panel", gocui.KeyArrowDown, gocui.ModNone, cursorDown); err != nil {
