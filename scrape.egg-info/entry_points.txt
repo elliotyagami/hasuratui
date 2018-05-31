@@ -1,3 +1,0 @@
-[console_scripts]
-hscrape = hscrape.scrape:main
-
