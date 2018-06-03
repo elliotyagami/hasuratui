@@ -347,7 +347,20 @@ func delMsg(g *gocui.Gui, v *gocui.View) error {
 	}
 	return nil
 }
+func terminalHandler(g *gocui.Gui, v *gocui.View) error {
+	var l string
+	var err error
 
+	_, cy := v.Cursor()
+	if l, err = v.Line(cy); err != nil {
+		l = ""
+	}
+	_ = status(g, l)
+	out, _ := exec.Command("sh", "-c", l).Output()
+	status(g, fmt.Sprintf("%s", out))
+
+	return nil
+}
 func openlink(g *gocui.Gui, v *gocui.View) error {
 	var l string
 	var err error
@@ -364,12 +377,12 @@ func openlink(g *gocui.Gui, v *gocui.View) error {
 			return err
 		}
 	} else if li == "install" {
+		if _, err := os.Stat("/usr/local/bin/hasura"); !os.IsNotExist(err) {
+			getLine(g, "Already installed")
+			return nil
+		}
+		getLine(g, "Installing")
 		go func() error {
-			if _, err := os.Stat("/usr/local/bin/hasura"); !os.IsNotExist(err) {
-				getLine(g, "Already installed")
-				return nil
-			}
-			getLine(g, "Installing")
 			exec.Command("sh", "-c", "curl -L https://cli.hasura.io/install.sh | bash").Output()
 			delMsg(g, v)
 			return nil
