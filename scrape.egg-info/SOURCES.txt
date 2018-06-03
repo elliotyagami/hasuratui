@@ -1,0 +1,9 @@
+setup.py
+hscrape/__init__.py
+hscrape/scrape.py
+scrape.egg-info/PKG-INFO
+scrape.egg-info/SOURCES.txt
+scrape.egg-info/dependency_links.txt
+scrape.egg-info/entry_points.txt
+scrape.egg-info/requires.txt
+scrape.egg-info/top_level.txt

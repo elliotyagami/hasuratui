@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,7 +16,7 @@ func unqiue(file string) {
 	// split the lines by a space, can also change this
 	lines := strings.Split(strLine, " ")
 	// remove the duplicates from lines slice (from func we created)
-	fmt.Println(lines)
+	// fmt.Println(lines)
 
 	// get the actual file
 	f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0600)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/antchfx/xquery/html"
 	"github.com/yhat/scrape"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
@@ -40,26 +39,4 @@ func scrapeIndexHasura() map[string]string {
 		indexEntries[key] = scrape.Attr(article, "href")
 	}
 	return indexEntries
-}
-
-func scrapePage(pagename string) string {
-	// request and parse the front page
-	resp, err := http.Get("https://docs.hasura.io/0.15/" + pagename)
-	if err != nil {
-		panic(err)
-	}
-	root, err := html.Parse(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	// for _, n := range  {
-	// 	return fmt.Sprintf("%s", n.InnerText())
-	// }
-	htmltext := htmlquery.Find(root, "//div[@class='docs-content']/div[2]")[0]
-	// 	fmt.Printf("%s \n", htmlquery.SelectAttr(n, "href")) // output href
-	// }
-
-	// node := xmlquery.Find(root, "//div[@class='docs-content']/div[2]")[0]
-	fmt.Sprintf("%s", htmlquery.SelectAttr(htmltext, "class"))
-	return "string"
 }
