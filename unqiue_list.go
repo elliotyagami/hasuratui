@@ -46,7 +46,7 @@ func unqiue(file string) {
 	// write to the file without the duplicates
 	for e := range uniques {
 		// write to the file without the duplicates
-		f.Write([]byte(lines[e])) // added a space here, but you can change this
+		f.Write([]byte(lines[e] + " ")) // added a space here, but you can change this
 	}
 	// close file
 	defer f.Close()
